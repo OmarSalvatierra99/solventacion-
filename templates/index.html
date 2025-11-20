@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solventación - Sistema de Procesamiento de Documentos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="background-animation">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Logo Institucional" class="logo">
+                    <div class="logo-text">
+                        <h1>Solventación</h1>
+                        <p class="subtitle">Sistema de Procesamiento de Documentos</p>
+                    </div>
+                </div>
+                <div class="stats-container" id="statsContainer">
+                    <div class="stat-item">
+                        <i class="fas fa-file-upload"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalUploads">0</span>
+                            <span class="stat-label">Archivos Procesados</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-chart-line"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalResults">0</span>
+                            <span class="stat-label">Resultados</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-card">
+                    <div class="upload-header">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h2>Cargar Documentos</h2>
+                        <p>Arrastra y suelta tus archivos DOCX o XLSX aquí</p>
+                    </div>
+
+                    <div class="drop-zone" id="dropZone">
+                        <div class="drop-zone-content">
+                            <i class="fas fa-file-upload drop-icon"></i>
+                            <h3>Arrastra tus archivos aquí</h3>
+                            <p>o</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i>
+                                Seleccionar Archivos
+                            </button>
+                            <input type="file" id="fileInput" multiple accept=".docx,.xlsx" hidden>
+                            <div class="supported-formats">
+                                <span class="format-badge"><i class="fas fa-file-word"></i> DOCX</span>
+                                <span class="format-badge"><i class="fas fa-file-excel"></i> XLSX</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Files List -->
+                    <div class="files-list" id="filesList"></div>
+
+                    <!-- Upload Button -->
+                    <div class="upload-actions" id="uploadActions" style="display: none;">
+                        <button class="btn btn-success btn-large" id="uploadBtn">
+                            <i class="fas fa-upload"></i>
+                            Procesar Archivos
+                        </button>
+                        <button class="btn btn-secondary" id="clearBtn">
+                            <i class="fas fa-times"></i>
+                            Limpiar
+                        </button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress-container" id="progressContainer" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p class="progress-text" id="progressText">Procesando archivos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Resultados del Procesamiento</h2>
+                    <button class="btn btn-success" onclick="exportToCSV()">
+                        <i class="fas fa-file-csv"></i>
+                        Exportar a CSV
+                    </button>
+                </div>
+                <div class="results-grid" id="resultsGrid"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Sistema de Solventación. Todos los derechos reservados.</p>
+            <div class="footer-links">
+                <a href="#"><i class="fas fa-info-circle"></i> Ayuda</a>
+                <a href="#"><i class="fas fa-book"></i> Documentación</a>
+                <a href="#"><i class="fas fa-envelope"></i> Contacto</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal for Results Details -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Detalles del Documento</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

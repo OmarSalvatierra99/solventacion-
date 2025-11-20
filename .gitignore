@@ -1,0 +1,74 @@
+# Entorno virtual
+venv/
+.env/
+env/
+.env
+# Archivos de configuración locales
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Archivos de editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Archivos específicos
+CLAUDE.md
+
+# Carpetas de datos
+uploads/
+resultados/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+*.spec
+
+# --- Entorno virtual ---
+venv/
+.env/
+.venv/
+
+# --- Configuración local ---
+*.sqlite3
+*.db
+*.log
+
+# --- Archivos temporales ---
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# --- Carpetas del proyecto que no deben versionarse ---
+uploads/
+resultados/
+
+# --- Herramientas ---
+pip-wheel-metadata/
+pip-log.txt
+
+# --- Archivos generados por herramientas ---
+dist/
+build/
+*.bak
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.code-workspace
+
