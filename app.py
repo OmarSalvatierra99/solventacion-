@@ -11,8 +11,13 @@ import json
 from pathlib import Path
 
 # Módulos de procesamiento
-from processors.docx_processor import process_docx
-from processors.xlsx_processor import process_xlsx
+# Usar procesadores optimizados por defecto (fallback a OpenAI incluido)
+from processors.docx_processor_optimized import process_docx
+from processors.xlsx_processor_optimized import process_xlsx
+
+# Para usar procesadores originales, descomentar estas líneas:
+# from processors.docx_processor import process_docx
+# from processors.xlsx_processor import process_xlsx
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'solventacion-2024-secure-key'
