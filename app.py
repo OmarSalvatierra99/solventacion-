@@ -12,12 +12,14 @@ from pathlib import Path
 
 # Módulos de procesamiento
 # Usar procesadores optimizados por defecto (fallback a OpenAI incluido)
-from processors.docx_processor_optimized import process_docx
-from processors.xlsx_processor_optimized import process_xlsx
+from processors.docx_processor_optimized import process_docx as process_docx_full
+from processors.xlsx_processor_optimized import process_xlsx as process_xlsx_full
 
-# Para usar procesadores originales, descomentar estas líneas:
-# from processors.docx_processor import process_docx
-# from processors.xlsx_processor import process_xlsx
+# Extractor minimalista (solo campos esenciales)
+from processors.minimal_extractor import process_with_minimal
+
+# Configuración: usar extractor minimalista por defecto
+USE_MINIMAL_EXTRACTOR = True  # Cambiar a False para usar extractor completo
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'solventacion-2024-secure-key'
@@ -60,10 +62,31 @@ def upload_file():
                 # Procesar según el tipo de archivo
                 ext = filename.rsplit('.', 1)[1].lower()
 
-                if ext == 'docx':
-                    data = process_docx(filepath)
-                elif ext == 'xlsx':
-                    data = process_xlsx(filepath)
+                if USE_MINIMAL_EXTRACTOR:
+                    # Usar extractor minimalista (solo campos esenciales)
+                    propuestas_data = process_with_minimal(filepath, ext.upper())
+
+                    # Crear estructura compatible con frontend
+                    data = {
+                        'tipo_archivo': ext.upper(),
+                        'nombre_archivo': filename,
+                        'procesado_en': datetime.now().isoformat(),
+                        'metodo_extraccion': 'minimal',
+                        'estadisticas': {
+                            'total_propuestas': propuestas_data.get('total', 0),
+                            'metodo': propuestas_data.get('metodo', 'minimal_extractor')
+                        },
+                        'contenido': {
+                            'propuestas': propuestas_data.get('propuestas', [])
+                        },
+                        'extraccion_exitosa': True
+                    }
+                else:
+                    # Usar extractor completo (con todo el contenido)
+                    if ext == 'docx':
+                        data = process_docx_full(filepath)
+                    elif ext == 'xlsx':
+                        data = process_xlsx_full(filepath)
 
                 # Guardar resultado
                 result_filename = f"resultado_{timestamp}_{filename}.json"

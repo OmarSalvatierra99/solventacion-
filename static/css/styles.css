@@ -1045,3 +1045,166 @@ body {
         width: 100%;
     }
 }
+
+/* ============================================
+   Campos Estructurados (Tabla Minimal)
+   ============================================ */
+.campos-estructura {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.campos-estructura h4 {
+    color: var(--primary-light);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.tabla-campos {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.tabla-campos thead {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+}
+
+.tabla-campos th {
+    padding: 1rem;
+    text-align: left;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.tabla-campos td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+    color: var(--text-secondary);
+    vertical-align: top;
+}
+
+.tabla-campos td strong {
+    color: var(--primary-light);
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.tabla-campos tbody tr {
+    transition: background-color var(--transition-fast);
+}
+
+.tabla-campos tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.tabla-campos tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Secciones de propuesta mejoradas */
+.propuesta-seccion {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: rgba(5, 150, 105, 0.05);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--secondary-color);
+}
+
+.propuesta-seccion h4 {
+    color: var(--secondary-light);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.seccion-content {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    padding: 0.5rem;
+}
+
+/* Botón copiar todo en header */
+.propuesta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.propuesta-header .btn-small {
+    white-space: nowrap;
+}
+
+/* Responsive para campos estructurados */
+@media (max-width: 768px) {
+    .tabla-campos {
+        font-size: 0.85rem;
+    }
+
+    .tabla-campos th,
+    .tabla-campos td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .campos-estructura {
+        padding: 1rem;
+    }
+
+    .propuesta-seccion {
+        padding: 1rem;
+    }
+
+    .tabla-campos thead {
+        display: none;
+    }
+
+    .tabla-campos,
+    .tabla-campos tbody,
+    .tabla-campos tr,
+    .tabla-campos td {
+        display: block;
+        width: 100%;
+    }
+
+    .tabla-campos tr {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: var(--border-radius);
+    }
+
+    .tabla-campos td {
+        text-align: left;
+        padding: 0.75rem;
+        position: relative;
+    }
+
+    .tabla-campos td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-weight: 600;
+        color: var(--primary-light);
+        background: rgba(59, 130, 246, 0.1);
+        margin: -0.75rem -0.75rem 0.5rem -0.75rem;
+    }
+}

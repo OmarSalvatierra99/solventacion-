@@ -261,6 +261,10 @@ function createPropuestaCard(propuesta, index) {
     const observacionTexto = stripHtmlTags(propuesta.observacion);
     const propuestaTexto = stripHtmlTags(propuesta.propuesta_html);
 
+    // Verificar si tiene campos estructurados (extracción minimal)
+    const tieneCamposEstructurados = propuesta.poliza || propuesta.fecha || propuesta.concepto ||
+                                      propuesta.importe || propuesta.monto_observado;
+
     return `
         <div class="propuesta-card" id="propuesta-${index}">
             <div class="propuesta-header">
@@ -273,24 +277,74 @@ function createPropuestaCard(propuesta, index) {
                     <span>${propuesta.archivo}</span>
                     ${propuesta.hoja ? `<span class="propuesta-hoja"><i class="fas fa-table"></i> ${propuesta.hoja}</span>` : ''}
                 </div>
+                <button class="btn btn-success btn-small" onclick="copiarPropuestaEstructurada(${index})" title="Copiar toda la información">
+                    <i class="fas fa-copy"></i> Copiar Todo
+                </button>
             </div>
 
-            <div class="propuesta-metadata">
-                <div class="metadata-item">
-                    <i class="fas fa-user"></i>
-                    <span>Autor: ${propuesta.metadatos?.autor || 'Desconocido'}</span>
+            ${tieneCamposEstructurados ? `
+                <div class="campos-estructura">
+                    <h4><i class="fas fa-table"></i> Información Estructurada</h4>
+                    <table class="tabla-campos">
+                        <thead>
+                            <tr>
+                                <th colspan="2">REFERENCIA</th>
+                                <th>IMPORTE</th>
+                                <th>MONTO OBSERVADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>Póliza/Documento:</strong><br>
+                                    ${propuesta.poliza || 'N/A'}
+                                </td>
+                                <td>
+                                    <strong>Fecha:</strong><br>
+                                    ${propuesta.fecha || 'N/A'}<br><br>
+                                    <strong>Concepto:</strong><br>
+                                    ${propuesta.concepto || 'N/A'}
+                                </td>
+                                <td>${propuesta.importe || 'N/A'}</td>
+                                <td>${propuesta.monto_observado || 'N/A'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="metadata-item">
-                    <i class="fas fa-user-edit"></i>
-                    <span>Modificado por: ${propuesta.metadatos?.ultima_modificacion_por || 'Desconocido'}</span>
-                </div>
-                <div class="metadata-item">
-                    <i class="fas fa-calendar"></i>
-                    <span>Fecha: ${propuesta.metadatos?.fecha_modificacion ? new Date(propuesta.metadatos.fecha_modificacion).toLocaleDateString('es-MX') : 'N/A'}</span>
-                </div>
-            </div>
+            ` : ''}
 
-            ${observacionTexto !== 'Sin observación' ? `
+            ${propuesta.metadatos ? `
+                <div class="propuesta-metadata">
+                    <div class="metadata-item">
+                        <i class="fas fa-user"></i>
+                        <span>Autor: ${propuesta.metadatos?.autor || 'Desconocido'}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <i class="fas fa-user-edit"></i>
+                        <span>Modificado por: ${propuesta.metadatos?.ultima_modificacion_por || 'Desconocido'}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Fecha: ${propuesta.metadatos?.fecha_modificacion ? new Date(propuesta.metadatos.fecha_modificacion).toLocaleDateString('es-MX') : 'N/A'}</span>
+                    </div>
+                </div>
+            ` : ''}
+
+            ${propuesta.descripcion ? `
+                <div class="propuesta-seccion">
+                    <h4><i class="fas fa-file-alt"></i> Descripción del Resultado</h4>
+                    <div class="seccion-content">${propuesta.descripcion}</div>
+                </div>
+            ` : ''}
+
+            ${propuesta.normatividad ? `
+                <div class="propuesta-seccion">
+                    <h4><i class="fas fa-balance-scale"></i> Normatividad Incumplida</h4>
+                    <div class="seccion-content">${propuesta.normatividad}</div>
+                </div>
+            ` : ''}
+
+            ${observacionTexto !== 'Sin observación' && !propuesta.descripcion && !propuesta.normatividad ? `
                 <div class="propuesta-observacion">
                     <h4><i class="fas fa-exclamation-circle"></i> Observación</h4>
                     <div class="observacion-content">${propuesta.observacion}</div>
@@ -300,7 +354,7 @@ function createPropuestaCard(propuesta, index) {
             <div class="propuesta-contenido">
                 <div class="propuesta-contenido-header">
                     <h4><i class="fas fa-clipboard-check"></i> Propuesta de Solventación</h4>
-                    <button class="btn btn-primary btn-small" onclick="copiarPropuesta(${index})" title="Copiar propuesta">
+                    <button class="btn btn-primary btn-small" onclick="copiarPropuesta(${index})" title="Copiar solo propuesta">
                         <i class="fas fa-copy"></i> Copiar
                     </button>
                 </div>
@@ -548,6 +602,98 @@ async function copiarPropuesta(index) {
     }
 }
 
+async function copiarPropuestaEstructurada(index) {
+    try {
+        // Obtener la propuesta del state
+        const todasLasPropuestas = [];
+
+        state.results.forEach((result, resultIndex) => {
+            if (result.status === 'success' && result.data?.contenido?.propuestas) {
+                result.data.contenido.propuestas.forEach((propuesta) => {
+                    todasLasPropuestas.push({
+                        ...propuesta,
+                        archivo: result.filename,
+                        resultIndex: resultIndex,
+                        metadatos: result.data.metadatos
+                    });
+                });
+            }
+        });
+
+        const propuesta = todasLasPropuestas[index];
+        if (!propuesta) {
+            throw new Error('Propuesta no encontrada');
+        }
+
+        // Formatear el texto estructurado
+        let textoCompleto = `PROPUESTA DE SOLVENTACIÓN #${propuesta.numero}\n`;
+        textoCompleto += `${'='.repeat(60)}\n\n`;
+
+        textoCompleto += `Archivo: ${propuesta.archivo}\n`;
+        if (propuesta.hoja) {
+            textoCompleto += `Hoja: ${propuesta.hoja}\n`;
+        }
+        textoCompleto += `\n`;
+
+        // Campos estructurados si existen
+        if (propuesta.poliza || propuesta.fecha || propuesta.concepto) {
+            textoCompleto += `REFERENCIA:\n`;
+            textoCompleto += `${'─'.repeat(60)}\n`;
+            if (propuesta.poliza) textoCompleto += `Póliza/Documento: ${propuesta.poliza}\n`;
+            if (propuesta.fecha) textoCompleto += `Fecha: ${propuesta.fecha}\n`;
+            if (propuesta.concepto) textoCompleto += `Concepto: ${propuesta.concepto}\n`;
+            textoCompleto += `\n`;
+        }
+
+        if (propuesta.importe || propuesta.monto_observado) {
+            textoCompleto += `IMPORTES:\n`;
+            textoCompleto += `${'─'.repeat(60)}\n`;
+            if (propuesta.importe) textoCompleto += `Importe: ${propuesta.importe}\n`;
+            if (propuesta.monto_observado) textoCompleto += `Monto Observado: ${propuesta.monto_observado}\n`;
+            textoCompleto += `\n`;
+        }
+
+        if (propuesta.descripcion) {
+            textoCompleto += `DESCRIPCIÓN DEL RESULTADO:\n`;
+            textoCompleto += `${'─'.repeat(60)}\n`;
+            textoCompleto += `${propuesta.descripcion}\n\n`;
+        }
+
+        if (propuesta.normatividad) {
+            textoCompleto += `NORMATIVIDAD INCUMPLIDA:\n`;
+            textoCompleto += `${'─'.repeat(60)}\n`;
+            textoCompleto += `${propuesta.normatividad}\n\n`;
+        }
+
+        textoCompleto += `PROPUESTA DE SOLVENTACIÓN:\n`;
+        textoCompleto += `${'─'.repeat(60)}\n`;
+        textoCompleto += stripHtmlTags(propuesta.propuesta_html || propuesta.propuesta_texto || '');
+
+        // Copiar al portapapeles
+        await navigator.clipboard.writeText(textoCompleto);
+
+        // Notificación de éxito
+        showNotification('Información completa copiada al portapapeles', 'success');
+
+        // Efecto visual en el botón
+        const buttons = document.querySelectorAll(`#propuesta-${index} .btn-success`);
+        buttons.forEach(btn => {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+            btn.style.backgroundColor = 'var(--success)';
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.backgroundColor = '';
+            }, 2000);
+        });
+
+    } catch (error) {
+        console.error('Error al copiar:', error);
+        showNotification('Error al copiar al portapapeles', 'error');
+    }
+}
+
 async function copiarTodasPropuestas() {
     try {
         // Recopilar todas las propuestas
@@ -611,7 +757,13 @@ function exportToCSV() {
                 todasPropuestas.push({
                     archivo: result.filename,
                     numero: propuesta.numero,
-                    observacion: stripHtmlTags(propuesta.observacion),
+                    poliza: propuesta.poliza || 'N/A',
+                    fecha: propuesta.fecha || 'N/A',
+                    concepto: propuesta.concepto || 'N/A',
+                    importe: propuesta.importe || 'N/A',
+                    monto_observado: propuesta.monto_observado || 'N/A',
+                    descripcion: propuesta.descripcion || stripHtmlTags(propuesta.observacion),
+                    normatividad: propuesta.normatividad || 'N/A',
                     propuesta: stripHtmlTags(propuesta.propuesta_html),
                     hoja: propuesta.hoja || 'N/A'
                 });
@@ -624,15 +776,25 @@ function exportToCSV() {
         return;
     }
 
-    // Crear CSV
-    const headers = ['Archivo', 'Número', 'Observación', 'Propuesta de Solventación', 'Hoja'];
+    // Crear CSV con campos estructurados
+    const headers = [
+        'Archivo', 'Número', 'Póliza/Documento', 'Fecha', 'Concepto',
+        'Importe', 'Monto Observado', 'Descripción del Resultado',
+        'Normatividad Incumplida', 'Propuesta de Solventación', 'Hoja'
+    ];
     const csvRows = [headers.join(',')];
 
     todasPropuestas.forEach(prop => {
         const row = [
             escapeCsvValue(prop.archivo),
             prop.numero,
-            escapeCsvValue(prop.observacion),
+            escapeCsvValue(prop.poliza),
+            escapeCsvValue(prop.fecha),
+            escapeCsvValue(prop.concepto),
+            escapeCsvValue(prop.importe),
+            escapeCsvValue(prop.monto_observado),
+            escapeCsvValue(prop.descripcion),
+            escapeCsvValue(prop.normatividad),
             escapeCsvValue(prop.propuesta),
             escapeCsvValue(prop.hoja)
         ];
