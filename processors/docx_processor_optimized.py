@@ -66,13 +66,26 @@ class DOCXProcessorOptimized:
             estilo['fuente'] = run.font.name
             estilo['tamaño'] = run.font.size.pt if run.font.size else None
 
-            # Color
+            # Color - Convertir RGB a formato hexadecimal
             if run.font.color and run.font.color.rgb:
-                estilo['color'] = str(run.font.color.rgb)
+                try:
+                    rgb_value = run.font.color.rgb
+                    # El valor RGB puede venir en diferentes formatos
+                    if isinstance(rgb_value, str):
+                        # Si ya es string, limpiar y usar
+                        estilo['color'] = rgb_value.strip()
+                    else:
+                        # Convertir a hexadecimal
+                        estilo['color'] = str(rgb_value)
+                except Exception:
+                    pass
 
             # Resaltado
             if run.font.highlight_color:
-                estilo['resaltado'] = str(run.font.highlight_color)
+                try:
+                    estilo['resaltado'] = str(run.font.highlight_color)
+                except Exception:
+                    pass
 
         return estilo
 
@@ -103,7 +116,14 @@ class DOCXProcessorOptimized:
         if estilo.get('tamaño'):
             css_styles.append(f"font-size:{estilo['tamaño']}pt")
         if estilo.get('color'):
-            css_styles.append(f"color:#{estilo['color']}")
+            # Asegurar que el color esté en formato hexadecimal correcto
+            color = estilo['color']
+            # Si no comienza con #, agregarlo
+            if not color.startswith('#'):
+                color = f"#{color}"
+            # Asegurar que tenga el formato correcto (6 caracteres hex)
+            if len(color) == 7 or len(color) == 9:  # #RRGGBB o #RRGGBBAA
+                css_styles.append(f"color:{color}")
         if estilo.get('fuente'):
             css_styles.append(f"font-family:{estilo['fuente']}")
 
@@ -239,10 +259,57 @@ class DOCXProcessorOptimized:
 
         return '\n'.join(html_completo)
 
+    def extraer_informacion_adicional(self, texto: str) -> Dict[str, Any]:
+        """
+        Extrae información adicional del texto de propuestas y observaciones
+        como fechas, responsables, referencias, etc.
+        """
+        info = {
+            'fechas': [],
+            'responsables': [],
+            'referencias': [],
+            'palabras_clave': []
+        }
+
+        # Buscar fechas (varios formatos)
+        import re
+        patrones_fecha = [
+            r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b',  # dd/mm/yyyy o dd-mm-yyyy
+            r'\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b',  # yyyy/mm/dd
+            r'\b(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?\d{4}\b',
+            r'\b(?:ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[a-z]*\.?\s+\d{4}\b'
+        ]
+
+        for patron in patrones_fecha:
+            fechas_encontradas = re.findall(patron, texto, re.IGNORECASE)
+            info['fechas'].extend(fechas_encontradas)
+
+        # Buscar responsables (palabras clave comunes)
+        palabras_responsable = ['responsable:', 'encargado:', 'titular:', 'director:', 'coordinador:', 'jefe:']
+        for palabra in palabras_responsable:
+            if palabra in texto.lower():
+                # Extraer texto después de la palabra clave
+                inicio = texto.lower().find(palabra)
+                fragmento = texto[inicio:inicio+100]
+                info['responsables'].append(fragmento)
+
+        # Buscar referencias numéricas
+        referencias = re.findall(r'\b(?:ref|referencia|no|número|num)\.?\s*:?\s*(\d+(?:[/-]\d+)*)\b', texto, re.IGNORECASE)
+        info['referencias'].extend(referencias)
+
+        # Palabras clave importantes
+        palabras_importantes = ['cumplimiento', 'incumplimiento', 'pendiente', 'realizado', 'en proceso',
+                                'evidencia', 'documentación', 'plazo', 'vencimiento', 'urgente', 'prioritario']
+        for palabra in palabras_importantes:
+            if palabra in texto.lower():
+                info['palabras_clave'].append(palabra)
+
+        return info
+
     def extraer_propuestas_estructuradas(self, doc: Document) -> List[Dict[str, Any]]:
         """
         Extrae propuestas usando lógica estructurada (método mejorado)
-        Busca en TODO el documento, no solo en tablas
+        Busca en TODO el documento, no solo en tablas, y extrae información adicional
         """
         propuestas = []
         numero = 1
@@ -254,10 +321,20 @@ class DOCXProcessorOptimized:
                 observacion_html = None
                 propuesta_html = None
                 propuesta_texto = None
+                numero_referencia = None
+                clasificacion = None
 
                 for idx, cell in enumerate(row.cells):
                     cell_text = cell.text.strip()
                     cell_text_norm = self.normalizar_texto(cell_text)
+
+                    # Buscar número de referencia o clasificación al inicio de la fila
+                    if idx == 0 and cell_text and len(cell_text) < 50:
+                        # Podría ser un número de referencia
+                        if re.match(r'^\d+(\.\d+)*$', cell_text.strip()):
+                            numero_referencia = cell_text.strip()
+                        elif re.match(r'^[A-Z\d\-_/]+$', cell_text.strip()):
+                            clasificacion = cell_text.strip()
 
                     # Buscar OBSERVACIÓN
                     if "OBSERVACION" in cell_text_norm and idx + 1 < len(row.cells):
@@ -293,14 +370,34 @@ class DOCXProcessorOptimized:
 
                 # Agregar propuesta si se encontró
                 if propuesta_html and propuesta_html.strip():
-                    propuestas.append({
+                    # Extraer información adicional
+                    texto_completo = f"{observacion or ''} {propuesta_texto}"
+                    info_adicional = self.extraer_informacion_adicional(texto_completo)
+
+                    propuesta_data = {
                         "numero": numero,
                         "observacion_texto": observacion or "Sin observación",
                         "observacion_html": observacion_html or "<p>Sin observación</p>",
                         "propuesta_texto": propuesta_texto.strip(),
                         "propuesta_html": propuesta_html,
                         "metodo_extraccion": "estructurado"
-                    })
+                    }
+
+                    # Agregar información adicional si existe
+                    if numero_referencia:
+                        propuesta_data['referencia'] = numero_referencia
+                    if clasificacion:
+                        propuesta_data['clasificacion'] = clasificacion
+                    if info_adicional['fechas']:
+                        propuesta_data['fechas_encontradas'] = info_adicional['fechas']
+                    if info_adicional['responsables']:
+                        propuesta_data['responsables_mencionados'] = info_adicional['responsables']
+                    if info_adicional['referencias']:
+                        propuesta_data['referencias_numericas'] = info_adicional['referencias']
+                    if info_adicional['palabras_clave']:
+                        propuesta_data['palabras_clave'] = info_adicional['palabras_clave']
+
+                    propuestas.append(propuesta_data)
                     numero += 1
 
         # 2. Buscar también en párrafos fuera de tablas (backup)
