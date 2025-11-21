@@ -7,7 +7,7 @@ import os
 import re
 from openai import OpenAI
 from dotenv import load_dotenv
-from database import db
+from scripts.database import db
 
 # Cargar variables de entorno
 load_dotenv()

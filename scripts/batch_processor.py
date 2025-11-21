@@ -18,9 +18,9 @@ from processors.docx_processor_optimized import process_docx
 from processors.xlsx_processor_optimized import process_xlsx
 
 # Importar módulos propios
-from metadata_analyzer import analizar_archivo
-from image_validator import validar_archivo, generar_reporte_consolidado, limpiar_reportes
-from database_consolidator import (
+from scripts.metadata_analyzer import analizar_archivo
+from scripts.image_validator import validar_archivo, generar_reporte_consolidado, limpiar_reportes
+from scripts.database_consolidator import (
     agregar_datos_archivo,
     generar_excel_consolidado,
     obtener_estadisticas,
@@ -33,7 +33,7 @@ class BatchProcessor:
     Procesador por lotes para análisis masivo de documentos
     """
 
-    def __init__(self, carpeta_entrada: str = 'ejemplos', carpeta_salida: str = 'resultados_consolidados'):
+    def __init__(self, carpeta_entrada: str = 'examples', carpeta_salida: str = 'resultados_consolidados'):
         """
         Inicializa el procesador por lotes
 
@@ -312,7 +312,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos de uso:
-  # Procesar archivos de la carpeta 'ejemplos'
+  # Procesar archivos de la carpeta 'examples'
   python batch_processor.py
 
   # Especificar carpeta de entrada y salida
@@ -326,8 +326,8 @@ Ejemplos de uso:
     parser.add_argument(
         '--entrada',
         type=str,
-        default='ejemplos',
-        help='Carpeta de entrada con archivos DOCX y XLSX (default: ejemplos)'
+        default='examples',
+        help='Carpeta de entrada con archivos DOCX y XLSX (default: examples)'
     )
 
     parser.add_argument(
