@@ -49,18 +49,38 @@ class XLSXProcessorOptimized:
         try:
             # Fuente
             if cell.font:
+                # Extraer color de fuente correctamente
+                color_fuente = None
+                try:
+                    if cell.font.color and hasattr(cell.font.color, 'rgb'):
+                        color_value = cell.font.color.rgb
+                        if isinstance(color_value, str):
+                            color_fuente = color_value.strip()
+                        else:
+                            color_fuente = str(color_value)
+                except Exception:
+                    pass
+
                 estilo['fuente'] = {
                     'nombre': cell.font.name,
                     'tamaño': cell.font.size,
                     'negrita': cell.font.bold,
                     'cursiva': cell.font.italic,
                     'subrayado': cell.font.underline is not None,
-                    'color': str(cell.font.color.rgb) if cell.font.color and hasattr(cell.font.color, 'rgb') else None
+                    'color': color_fuente
                 }
 
             # Relleno
             if cell.fill and cell.fill.start_color:
-                estilo['relleno'] = str(cell.fill.start_color.rgb) if hasattr(cell.fill.start_color, 'rgb') else None
+                try:
+                    if hasattr(cell.fill.start_color, 'rgb'):
+                        relleno_value = cell.fill.start_color.rgb
+                        if isinstance(relleno_value, str):
+                            estilo['relleno'] = relleno_value.strip()
+                        else:
+                            estilo['relleno'] = str(relleno_value)
+                except Exception:
+                    pass
 
             # Alineación
             if cell.alignment:
@@ -106,10 +126,26 @@ class XLSXProcessorOptimized:
             if fuente.get('tamaño'):
                 css_styles.append(f"font-size:{fuente['tamaño']}pt")
             if fuente.get('color'):
-                css_styles.append(f"color:#{fuente['color'][2:]}" if len(fuente['color']) > 2 else '')
+                # Formatear color correctamente
+                color = fuente['color']
+                if not color.startswith('#'):
+                    # Remover los primeros 2 caracteres si son FF (alpha channel)
+                    if len(color) > 6 and color[:2].upper() == 'FF':
+                        color = color[2:]
+                    color = f"#{color}"
+                if len(color) == 7 or len(color) == 9:
+                    css_styles.append(f"color:{color}")
 
         if 'relleno' in estilo and estilo['relleno']:
-            css_styles.append(f"background-color:#{estilo['relleno'][2:]}" if len(estilo['relleno']) > 2 else '')
+            # Formatear color de relleno correctamente
+            relleno = estilo['relleno']
+            if not relleno.startswith('#'):
+                # Remover los primeros 2 caracteres si son FF (alpha channel)
+                if len(relleno) > 6 and relleno[:2].upper() == 'FF':
+                    relleno = relleno[2:]
+                relleno = f"#{relleno}"
+            if len(relleno) == 7 or len(relleno) == 9:
+                css_styles.append(f"background-color:{relleno}")
 
         if 'alineacion' in estilo:
             alin = estilo['alineacion']
@@ -202,9 +238,53 @@ class XLSXProcessorOptimized:
 
         return imagenes
 
+    def extraer_informacion_adicional(self, texto: str) -> Dict[str, Any]:
+        """
+        Extrae información adicional del texto de propuestas y observaciones
+        """
+        info = {
+            'fechas': [],
+            'responsables': [],
+            'referencias': [],
+            'palabras_clave': []
+        }
+
+        # Buscar fechas (varios formatos)
+        patrones_fecha = [
+            r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b',
+            r'\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b',
+            r'\b(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?\d{4}\b',
+            r'\b(?:ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[a-z]*\.?\s+\d{4}\b'
+        ]
+
+        for patron in patrones_fecha:
+            fechas_encontradas = re.findall(patron, texto, re.IGNORECASE)
+            info['fechas'].extend(fechas_encontradas)
+
+        # Buscar responsables
+        palabras_responsable = ['responsable:', 'encargado:', 'titular:', 'director:', 'coordinador:', 'jefe:']
+        for palabra in palabras_responsable:
+            if palabra in texto.lower():
+                inicio = texto.lower().find(palabra)
+                fragmento = texto[inicio:inicio+100]
+                info['responsables'].append(fragmento)
+
+        # Buscar referencias numéricas
+        referencias = re.findall(r'\b(?:ref|referencia|no|número|num)\.?\s*:?\s*(\d+(?:[/-]\d+)*)\b', texto, re.IGNORECASE)
+        info['referencias'].extend(referencias)
+
+        # Palabras clave importantes
+        palabras_importantes = ['cumplimiento', 'incumplimiento', 'pendiente', 'realizado', 'en proceso',
+                                'evidencia', 'documentación', 'plazo', 'vencimiento', 'urgente', 'prioritario']
+        for palabra in palabras_importantes:
+            if palabra in texto.lower():
+                info['palabras_clave'].append(palabra)
+
+        return info
+
     def extraer_propuestas_estructuradas(self, filepath: str) -> List[Dict[str, Any]]:
         """
-        Extrae propuestas usando lógica estructurada (método original mejorado)
+        Extrae propuestas usando lógica estructurada (método mejorado con información adicional)
         """
         try:
             excel_data = pd.ExcelFile(filepath)
@@ -216,12 +296,24 @@ class XLSXProcessorOptimized:
                 df = excel_data.parse(sheet_name)
                 sheet = wb[sheet_name]
 
-                # Buscar todas las apariciones de "PROPUESTA DE SOLVENTACIÓN" (sin ignorar ninguna)
+                # Buscar todas las apariciones de "PROPUESTA DE SOLVENTACIÓN"
                 for i, row in df.iterrows():
                     for idx in range(len(row) - 1):
                         cell_value = row.iloc[idx]
 
                         if isinstance(cell_value, str) and "PROPUESTA DE SOLVENTACIÓN" in cell_value.upper():
+                            # Buscar número de referencia o clasificación al inicio
+                            numero_referencia = None
+                            clasificacion = None
+                            if idx > 0:
+                                primera_celda = row.iloc[0]
+                                if primera_celda and str(primera_celda).strip():
+                                    primer_valor = str(primera_celda).strip()
+                                    if re.match(r'^\d+(\.\d+)*$', primer_valor):
+                                        numero_referencia = primer_valor
+                                    elif re.match(r'^[A-Z\d\-_/]+$', primer_valor):
+                                        clasificacion = primer_valor
+
                             # Buscar observación
                             observacion = None
                             observacion_html = None
@@ -257,7 +349,11 @@ class XLSXProcessorOptimized:
                                     propuesta_html = f"<p>{escape(str(prop_value))}</p>"
 
                             if propuesta and propuesta.strip():
-                                propuestas.append({
+                                # Extraer información adicional
+                                texto_completo = f"{observacion or ''} {propuesta}"
+                                info_adicional = self.extraer_informacion_adicional(texto_completo)
+
+                                propuesta_data = {
                                     "numero": numero_global,
                                     "hoja": sheet_name,
                                     "fila": i + 2,
@@ -266,7 +362,23 @@ class XLSXProcessorOptimized:
                                     "propuesta_texto": propuesta,
                                     "propuesta_html": propuesta_html,
                                     "metodo_extraccion": "estructurado"
-                                })
+                                }
+
+                                # Agregar información adicional si existe
+                                if numero_referencia:
+                                    propuesta_data['referencia'] = numero_referencia
+                                if clasificacion:
+                                    propuesta_data['clasificacion'] = clasificacion
+                                if info_adicional['fechas']:
+                                    propuesta_data['fechas_encontradas'] = info_adicional['fechas']
+                                if info_adicional['responsables']:
+                                    propuesta_data['responsables_mencionados'] = info_adicional['responsables']
+                                if info_adicional['referencias']:
+                                    propuesta_data['referencias_numericas'] = info_adicional['referencias']
+                                if info_adicional['palabras_clave']:
+                                    propuesta_data['palabras_clave'] = info_adicional['palabras_clave']
+
+                                propuestas.append(propuesta_data)
                                 numero_global += 1
                             break
 

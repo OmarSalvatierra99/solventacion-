@@ -29,7 +29,7 @@ function initializeApp() {
     dropZone.addEventListener('dragover', handleDragOver);
     dropZone.addEventListener('dragleave', handleDragLeave);
     dropZone.addEventListener('drop', handleDrop);
-    dropZone.addEventListener('click', () => fileInput.click());
+    // Removido: el click ya está manejado por el botón interno
 
     // Event Listeners - File Input
     fileInput.addEventListener('change', handleFileSelect);
@@ -261,6 +261,70 @@ function createPropuestaCard(propuesta, index) {
     const observacionTexto = stripHtmlTags(propuesta.observacion);
     const propuestaTexto = stripHtmlTags(propuesta.propuesta_html);
 
+    // Construir información adicional si existe
+    let infoAdicionalHTML = '';
+
+    if (propuesta.referencia || propuesta.clasificacion || propuesta.fechas_encontradas ||
+        propuesta.responsables_mencionados || propuesta.palabras_clave || propuesta.referencias_numericas) {
+        infoAdicionalHTML = '<div class="propuesta-info-adicional">';
+
+        if (propuesta.referencia) {
+            infoAdicionalHTML += `
+                <div class="info-adicional-item">
+                    <i class="fas fa-tag"></i>
+                    <span><strong>Referencia:</strong> ${propuesta.referencia}</span>
+                </div>
+            `;
+        }
+
+        if (propuesta.clasificacion) {
+            infoAdicionalHTML += `
+                <div class="info-adicional-item">
+                    <i class="fas fa-bookmark"></i>
+                    <span><strong>Clasificación:</strong> ${propuesta.clasificacion}</span>
+                </div>
+            `;
+        }
+
+        if (propuesta.fechas_encontradas && propuesta.fechas_encontradas.length > 0) {
+            infoAdicionalHTML += `
+                <div class="info-adicional-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span><strong>Fechas:</strong> ${propuesta.fechas_encontradas.join(', ')}</span>
+                </div>
+            `;
+        }
+
+        if (propuesta.responsables_mencionados && propuesta.responsables_mencionados.length > 0) {
+            infoAdicionalHTML += `
+                <div class="info-adicional-item">
+                    <i class="fas fa-user-tie"></i>
+                    <span><strong>Responsables:</strong> ${propuesta.responsables_mencionados.join('; ')}</span>
+                </div>
+            `;
+        }
+
+        if (propuesta.referencias_numericas && propuesta.referencias_numericas.length > 0) {
+            infoAdicionalHTML += `
+                <div class="info-adicional-item">
+                    <i class="fas fa-link"></i>
+                    <span><strong>Referencias numéricas:</strong> ${propuesta.referencias_numericas.join(', ')}</span>
+                </div>
+            `;
+        }
+
+        if (propuesta.palabras_clave && propuesta.palabras_clave.length > 0) {
+            infoAdicionalHTML += `
+                <div class="info-adicional-item">
+                    <i class="fas fa-key"></i>
+                    <span><strong>Palabras clave:</strong> ${propuesta.palabras_clave.map(p => `<span class="keyword-badge">${p}</span>`).join(' ')}</span>
+                </div>
+            `;
+        }
+
+        infoAdicionalHTML += '</div>';
+    }
+
     return `
         <div class="propuesta-card" id="propuesta-${index}">
             <div class="propuesta-header">
@@ -289,6 +353,8 @@ function createPropuestaCard(propuesta, index) {
                     <span>Fecha: ${propuesta.metadatos?.fecha_modificacion ? new Date(propuesta.metadatos.fecha_modificacion).toLocaleDateString('es-MX') : 'N/A'}</span>
                 </div>
             </div>
+
+            ${infoAdicionalHTML}
 
             ${observacionTexto !== 'Sin observación' ? `
                 <div class="propuesta-observacion">
