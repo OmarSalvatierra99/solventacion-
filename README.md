@@ -1,15 +1,23 @@
 # 🚀 Solventación - Sistema Optimizado de Procesamiento de Documentos
 
-Sistema inteligente de procesamiento de documentos DOCX y XLSX con extracción completa y fiel del contenido.
+Sistema inteligente de procesamiento de documentos DOCX y XLSX con extracción completa y fiel del contenido. Incluye análisis por lotes, validación de imágenes y generación de base de datos consolidada.
 
 ## ✨ Características Principales
 
+### Procesamiento de Documentos
 - ✅ **Extracción completa** de TODO el contenido de los documentos
 - ✅ **Preserva formatos**: negritas, cursivas, colores, estilos
 - ✅ **Extrae imágenes** con datos binarios
-- ✅ **Detecta duplicados** automáticamente
 - ✅ **Fallback inteligente** a OpenAI solo cuando es necesario
 - ✅ **Optimizado** para rendimiento máximo
+
+### Análisis Avanzado (NUEVO)
+- 🆕 **Análisis por lotes** de múltiples archivos automáticamente
+- 🆕 **Extracción de metadatos**: Ente, Fuente de Financiamiento, Periodo
+- 🆕 **Validación de imágenes** en propuestas de solventación
+- 🆕 **Base de datos consolidada** en Excel organizada por ente y financiamiento
+- 🆕 **Reportes detallados** en JSON con estadísticas completas
+- 🆕 **Histórico completo** de propuestas por ente y fuente
 
 ## 🔧 Instalación Rápida
 
@@ -31,8 +39,31 @@ Abre `http://localhost:5023` en tu navegador.
 
 Lee [Claude.md](./Claude.md) para documentación completa.
 
-## 🎯 Uso Básico
+## 🎯 Modos de Uso
 
+### Modo 1: Procesamiento por Lotes (Recomendado) 🆕
+
+Procesa automáticamente todos los archivos de una carpeta y genera base de datos consolidada:
+
+```bash
+python batch_processor.py --entrada ejemplos --salida resultados_consolidados
+```
+
+**Salidas generadas:**
+- 📊 Base de datos consolidada en Excel
+- 📋 Reporte de imágenes en propuestas
+- 📈 Estadísticas de procesamiento
+- 📁 Resultados individuales en JSON
+
+### Modo 2: Interfaz Web
+
+Para procesamiento individual con interfaz gráfica:
+
+```bash
+python app.py
+```
+
+Abre `http://localhost:5023` en tu navegador y:
 1. Sube archivos DOCX o XLSX
 2. El sistema extrae automáticamente:
    - Propuestas de solventación
@@ -131,14 +162,54 @@ VERBOSE=True
 
 ## 📚 Documentación
 
-- [Claude.md](./Claude.md) - Documentación completa y técnica
+- **[GUIA_USO.md](./GUIA_USO.md)** - Guía completa de uso del sistema 🆕
+- **[ARQUITECTURA.md](./ARQUITECTURA.md)** - Arquitectura y diseño del sistema 🆕
+- [Claude.md](./Claude.md) - Documentación técnica completa
 - [config.py](./config.py) - Opciones de configuración
+
+## 🏗️ Arquitectura Modular
+
+El sistema está diseñado con una arquitectura modular clara:
+
+```
+solventacion-/
+├── processors/                      # Procesadores de archivos
+│   ├── docx_processor_optimized.py # Procesa archivos DOCX
+│   └── xlsx_processor_optimized.py # Procesa archivos XLSX
+├── metadata_analyzer.py             # Extrae ente, financiamiento, etc.
+├── image_validator.py               # Valida imágenes en propuestas
+├── database_consolidator.py         # Genera base de datos consolidada
+├── batch_processor.py               # Punto de entrada principal 🆕
+└── app.py                          # Interfaz web Flask
+```
+
+## 🎨 Características Técnicas
+
+### Extracción de Información Clave
+- **Ente**: FIDECIX, SEPUEDE, etc.
+- **Fuente de Financiamiento**: SA, PEFCF, R, PRAS, PDP, REA
+- **Periodo**: ENE_JUN, ENE_ENE, etc.
+- **Tipo de Documento**: RRyPE, REA, etc.
+
+### Validación de Contenido
+- Detecta imágenes en sección "PROPUESTA DE SOLVENTACIÓN"
+- Reporta archivos con imágenes para revisión manual
+- Extrae ubicación exacta de imágenes detectadas
+
+### Base de Datos Consolidada
+- Organizada por Ente y Fuente de Financiamiento
+- Múltiples hojas en Excel para fácil navegación
+- Histórico completo de propuestas
+- Estadísticas y resúmenes automáticos
 
 ## 🤝 Soporte
 
-Para problemas o preguntas, revisa [Claude.md](./Claude.md) sección "Solución de Problemas".
+Para problemas o preguntas:
+- Guía de uso: [GUIA_USO.md](./GUIA_USO.md)
+- Arquitectura: [ARQUITECTURA.md](./ARQUITECTURA.md)
+- Documentación técnica: [Claude.md](./Claude.md)
 
 ---
 
-**Versión**: 2.0.0 (Optimizada)
-**Actualizado**: Enero 2025
+**Versión**: 3.0.0 (Análisis por Lotes + Consolidación)
+**Actualizado**: Noviembre 2025

@@ -53,6 +53,7 @@ venv/
 # --- Carpetas del proyecto que no deben versionarse ---
 uploads/
 resultados/
+resultados_consolidados/
 
 # --- Herramientas ---
 pip-wheel-metadata/

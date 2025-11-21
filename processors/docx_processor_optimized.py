@@ -251,6 +251,7 @@ class DOCXProcessorOptimized:
         for tabla in doc.tables:
             for row in tabla.rows:
                 observacion = None
+                observacion_html = None
                 propuesta_html = None
                 propuesta_texto = None
 

@@ -13,8 +13,9 @@ pandas==2.3.3
 # Base de datos
 python-dotenv==1.0.0
 
-# OpenAI API
+# OpenAI API (Opcional - solo para fallback)
 openai==1.12.0
 
 # Utilidades
 python-multipart==0.0.6
+tqdm==4.66.1
